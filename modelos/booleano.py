@@ -1,4 +1,4 @@
-from ..nlp.languaje_procesing import normalize_text
+from nlp import normalize_text
 import os
 from collections import defaultdict
 import glob

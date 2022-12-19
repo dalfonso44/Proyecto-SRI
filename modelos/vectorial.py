@@ -4,7 +4,7 @@ import math
 from operator import invert
 import os
 from collections import defaultdict
-from ..nlp.languaje_procesing import normalize_text
+from nlp import normalize_text
 from functools import reduce
 
 class VectorSpaceModel(object):
@@ -24,7 +24,10 @@ class VectorSpaceModel(object):
         self.vocabulary = set()
 
         # ahora se supone que cuando no tenga nada ya tiene un cero
-        self.postings = defaultdict([0 for i in range(glob.glob(self.Corpus))])
+        def default_value_for_postings():
+            return [0 for i in range(len(glob.glob(self.Corpus)))]
+        
+        self.postings = defaultdict(default_value_for_postings)
 
         self.query_postings = defaultdict(int)
 
@@ -34,7 +37,7 @@ class VectorSpaceModel(object):
         
         self.documents_norm = defaultdict(float)
 
-        def preprocesing_corpus(self):
+        def preprocesing_corpus():
             index = 1
             for filename in glob.glob(self.Corpus):
                 with open(filename,"r") as file:
@@ -47,8 +50,8 @@ class VectorSpaceModel(object):
                 self.vocabulary = self.vocabulary.union(unique_terms)
 
 
-                for term in normalized_text:
-                    self.postings[term][index] = text.count(term) # frecuencia del termino en el doc
+                for term in unique_terms:
+                    self.postings[term][index - 1] = text.count(term) # frecuencia del termino en el doc
                     self.global_terms_frequency[term] += 1
 
                 self.documents[index] = os.path.basename(filename)
@@ -60,8 +63,8 @@ class VectorSpaceModel(object):
     def proces_query(self,query):
         self.query_vector = self.lexer(query)
         scores = defaultdict(float)
-        for id in range(1,len(self.documents)):
-            scores[id] = self.similarity(query,self.query_postings,id)
+        for id in range(len(self.documents)):
+            scores[id] = self.similarity(id)
 
         return scores
 
@@ -147,13 +150,3 @@ class VectorSpaceModel(object):
         return normalized_query
 
 
-
-
-
-
-            
-
-
-
-
-        

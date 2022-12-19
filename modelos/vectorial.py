@@ -61,7 +61,7 @@ class VectorSpaceModel(object):
         self.query_vector = self.lexer(query)
         scores = defaultdict(float)
         for id in range(1,len(self.documents)):
-            scores[id] = self.similarity(query,query_postings,id)
+            scores[id] = self.similarity(query,self.query_postings,id)
 
         return scores
 
@@ -72,9 +72,9 @@ class VectorSpaceModel(object):
 
         for term in self.query_vector:
             weight_in_query = self.weight_in_query(term)
-            query_norm += weigth_in_query**2
-            weigth_in_document = self.weight_in_document(term, doc_id)
-            similarity += (weigth_for_term_in_query * weigth_for_term_in_document) # Dj * Q
+            query_norm += weight_in_query**2
+            weigth_in_document = self.weight_in_document(term, doc)
+            similarity += (weight_in_query * weigth_in_document) # Dj * Q
 
         query_norm = math.sqrt(query_norm)
         doc_norm = self.documents_norm[doc]
@@ -132,7 +132,7 @@ class VectorSpaceModel(object):
         n_i = self.global_terms_frequency[term]     
 
         #revisar esto, sumar 1 arriba y abajo pa que nunca de cero
-        idf = math.log((N/ni),2)   
+        idf = math.log((N/n_i),2)   
         return idf
 
 

@@ -1,5 +1,5 @@
 from statistics import variance
-from ..nlp.languaje_procesing import normalize_text
+from nlp.languaje_procesing import normalize_text
 from numpy.linalg import svd, norm
 from collections import defaultdict, Counter
 import numpy as np

@@ -47,7 +47,7 @@ class VectorSpaceModel(object):
                 self.vocabulary = self.vocabulary.union(unique_terms)
 
 
-                for term in unique_terms:
+                for term in normalized_text:
                     self.postings[term][index] = text.count(term) # frecuencia del termino en el doc
                     self.global_terms_frequency[term] += 1
 

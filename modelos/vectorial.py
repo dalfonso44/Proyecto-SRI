@@ -4,7 +4,7 @@ import math
 from operator import invert
 import os
 from collections import defaultdict
-from nlp import normalize_text
+from nlp.languaje_procesing import normalize_text
 from functools import reduce
 
 class VectorSpaceModel(object):
@@ -72,6 +72,7 @@ class VectorSpaceModel(object):
     def similarity(self, doc):
         similarity = 0.0
         query_norm = 0
+        doc_norm = 0
 
         for term in self.query_vector:
             weight_in_query = self.weight_in_query(term)
@@ -79,8 +80,14 @@ class VectorSpaceModel(object):
             weigth_in_document = self.weight_in_document(term, doc)
             similarity += (weight_in_query * weigth_in_document) # Dj * Q
 
+
+
         query_norm = math.sqrt(query_norm)
-        doc_norm = self.documents_norm[doc]
+        for term in self.documents_vector[doc]:
+            doc_norm += self.weight_in_document(term,doc)
+
+        if similarity == 0:
+            return 0
         similarity = similarity / (query_norm * doc_norm)   
         return similarity 
 

@@ -32,12 +32,6 @@ class LSI_Model(object):
         self.d = None
 
 
-
-
-
-
-
-
         self.documents = dict()
         self.index = defaultdict(dict)
 
@@ -79,15 +73,14 @@ class LSI_Model(object):
             for filename in glob.glob(self.corpus):
                 with open(filename,"r") as file:
                     text = file.read()
-                    #print("aqui hay algo")
                 normalized_text = normalize_text(text) 
 
                 unique_terms = set(normalized_text)
 
                 self.documents_vector[index] = unique_terms
                 self.vocabulary = self.vocabulary.union(unique_terms)
-                self.M += len(unique_terms)
-
+                #self.M += len(unique_terms)
+                
 
                 for term in normalized_text:
                     self.postings[term][index] = normalized_text.count(term) # frecuencia del termino en el doc
@@ -96,6 +89,7 @@ class LSI_Model(object):
                 self.documents[index] = os.path.basename(filename)
                 index += 1
             self.N = index -1   
+            self.M=len(self.vocabulary)
            # print(self.N)
             #print(self.M)
 
@@ -126,21 +120,27 @@ class LSI_Model(object):
 
         self.U, self.Z, self.V_t = self.svd_with_dimensionality_reduction()
 
-        query_trasp = np.transpose(self.query_vector)
-        print(self.Z.shape)
-        print(self.U.shape)
-        print(query_trasp.shape)
-        print(len(self.vocabulary))
+        #query_trasp = np.transpose(self.query_vector)
         
-        self.q = np.dot(np.dot(np.linalg.inv(self.Z),np.transpose(self.U)),query_trasp)
-        C_transp=np.transpose(self.C)
-        self.d = np.dot(np.dot(np.linalg.inv(self.Z),np.transpose(self.U)),C_transp)
 
-        similitudes = []
-        for i in range(self.d.shape[1]):
-            similitudes.append(self.d[:,i],self.q)
+        q = self.query_vector.T @ self.U @ np.linalg.pinv(self.Z)
+        d = self.C.T @ self.U @ np.linalg.pinv(self.Z)
 
-        return similitudes
+        #self.q = np.dot(np.dot(np.linalg.inv(self.Z),np.transpose(self.U)),query_trasp)
+        #C_transp=np.transpose(self.C)
+        #self.d = np.dot(np.dot(np.linalg.inv(self.Z),np.transpose(self.U)),C_transp)
+
+
+        res = np.apply_along_axis(lambda row: self.sim(q, row), axis=1, arr=d)
+        print(res)
+        ranking = np.argsort(-res) + 1
+        return ranking
+
+        #similitudes = []
+        #for i in range(self.d.shape[1]):
+        #    similitudes.append(self.d[:,i],self.q)
+
+        #return similitudes
 
     
     def rank(self,similitudes,doc):
@@ -153,7 +153,7 @@ class LSI_Model(object):
                 
 
     def sim(self,doc,q):
-        simility=np.dot(np.transpose(doc),q)/np.linalg.norm(doc)*np.linalg.norm(q)
+        simility=(doc@q)/(np.linalg.norm(doc) * np.linalg.norm(q))
         return simility
     
     def lexer(self,query):
@@ -166,7 +166,7 @@ class LSI_Model(object):
         return normalized_query
 
     def make_query_vector(self,query):
-        query_vector = np.ndarray(len(self.vocabulary))
+        query_vector = np.zeros(len(self.vocabulary))
         for i in range (len(self.documents_vector)):
             for term in self.vocabulary:
                 if term in self.documents_vector[i]:
@@ -174,13 +174,4 @@ class LSI_Model(object):
         return query_vector
 
 
-
-#a = LSI_Model("modelos/corpus/*",2)
-#print(a.proces_query("fiends week house"))
-#f,b,c = a.svd_with_dimensionality_reduction() 
-#print(len(f))
-#print(len(b))
-#print(len(c))
-
-#print(c)
 

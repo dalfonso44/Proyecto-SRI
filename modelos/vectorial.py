@@ -38,7 +38,7 @@ class VectorSpaceModel(object):
         self.documents_norm = defaultdict(float)
 
         def preprocesing_corpus():
-            index = 1
+            index = 0
             for filename in glob.glob(self.Corpus):
                 with open(filename,"r") as file:
                     text = file.read()
@@ -51,7 +51,7 @@ class VectorSpaceModel(object):
 
 
                 for term in unique_terms:
-                    self.postings[term][index - 1] = text.count(term) # frecuencia del termino en el doc
+                    self.postings[term][index] = text.count(term) # frecuencia del termino en el doc
                     self.global_terms_frequency[term] += 1
 
                 self.documents[index] = os.path.basename(filename)
@@ -72,6 +72,7 @@ class VectorSpaceModel(object):
     def similarity(self, doc):
         similarity = 0.0
         query_norm = 0
+        doc_norm = 0
 
         for term in self.query_vector:
             weight_in_query = self.weight_in_query(term)
@@ -80,25 +81,30 @@ class VectorSpaceModel(object):
             similarity += (weight_in_query * weigth_in_document) # Dj * Q
 
         query_norm = math.sqrt(query_norm)
-        doc_norm = self.documents_norm[doc]
-        similarity = similarity / (query_norm * doc_norm)   
+
+        l=self.documents_vector[doc]
+
+        for term in l:
+            doc_norm += self.weight_in_document(term,doc)**2
+        
+        doc_norm=math.sqrt(doc_norm)
+        similarity = similarity / (query_norm * doc_norm) 
         return similarity 
 
 
 
 
 
-    def weight_in_document(self, term,doc):
-        tf_ij = self.normalized_term_frequency(term,doc)
+    def weight_in_document(self, term, doc):
+        tf_ij = self.normalized_term_frequency(term,doc)+1
         idf_i = self.inverse_document_frequecy(term)
         weight = tf_ij * idf_i
         return weight
 
     def weight_in_query(self,term):
         alpha = 0.4 # termino de suavizado
-        tf_iq = self.normalized_term_frequency(term,-1)
+        tf_iq = self.normalized_term_frequency(term,-1)+1
         idf_i = self.inverse_document_frequecy(term)
-
         weight = (alpha + (1+alpha)*tf_iq) * idf_i
         return weight
 

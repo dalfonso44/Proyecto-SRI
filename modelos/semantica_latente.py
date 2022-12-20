@@ -1,5 +1,5 @@
 from statistics import variance
-from languaje_procesing import normalize_text
+from nlp import normalize_text
 from numpy.linalg import svd, norm
 from collections import defaultdict, Counter
 import numpy as np
@@ -144,11 +144,11 @@ class LSI_Model(object):
 
 
 
-a = LSI_Model("modelos/corpus/*",2)
-f,b,c = a.svd_with_dimensionality_reduction() 
-print(len(f))
-print(len(b))
-print(len(c))
+#a = LSI_Model("modelos/corpus/*",2)
+#f,b,c = a.svd_with_dimensionality_reduction() 
+#print(len(f))
+#print(len(b))
+#print(len(c))
 
-print(c)
+#print(c)
 

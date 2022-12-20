@@ -1,5 +1,5 @@
-from modelos import VectorSpaceModel
+from modelos import LSI_Model
 
-a = VectorSpaceModel("modelos/corpus/*")
+a = LSI_Model("modelos/corpus/*",2)
 print(a.proces_query("friends twice week"))
 

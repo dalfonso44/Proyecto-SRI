@@ -5,6 +5,7 @@ from collections import defaultdict, Counter
 import numpy as np
 import os
 import glob
+import math
 
 
 
@@ -25,8 +26,10 @@ class LSI_Model(object):
         self.Z = None
         self.V_t = None
 
-
-
+        #query en las nuevas matrices reducidas
+        self.q = None
+        #documentos reducidos
+        self.d = None
 
 
 
@@ -76,7 +79,7 @@ class LSI_Model(object):
             for filename in glob.glob(self.corpus):
                 with open(filename,"r") as file:
                     text = file.read()
-                    print("aqui hay algo")
+                    #print("aqui hay algo")
                 normalized_text = normalize_text(text) 
 
                 unique_terms = set(normalized_text)
@@ -111,7 +114,7 @@ class LSI_Model(object):
 
 
     def svd_with_dimensionality_reduction(self):
-        u, s, v = np.linalg.svd(self.C)
+        u, s, v = np.linalg.svd(self.C,full_matrices=False)
         s = np.diag(s)
         k = self.rank_aproximation
         return u[:, :k], s[:k, :k], v[:, :k]
@@ -123,8 +126,36 @@ class LSI_Model(object):
 
         self.U, self.Z, self.V_t = self.svd_with_dimensionality_reduction()
 
-         
+        query_trasp = np.transpose(self.query_vector)
+        print(self.Z.shape)
+        print(self.U.shape)
+        print(query_trasp.shape)
+        print(len(self.vocabulary))
+        
+        self.q = np.dot(np.dot(np.linalg.inv(self.Z),np.transpose(self.U)),query_trasp)
+        C_transp=np.transpose(self.C)
+        self.d = np.dot(np.dot(np.linalg.inv(self.Z),np.transpose(self.U)),C_transp)
 
+        similitudes = []
+        for i in range(self.d.shape[1]):
+            similitudes.append(self.d[:,i],self.q)
+
+        return similitudes
+
+    
+    def rank(self,similitudes,doc):
+        for i in range(len(similitudes)):
+            for j in range(i + 1, len(similitudes)):
+                if similitudes[i] < similitudes[j]:
+                    similitudes[i], similitudes[j] = similitudes[j], similitudes[i]
+                    doc[i], doc[j] = doc[j], doc[i]
+        return doc
+                
+
+    def sim(self,doc,q):
+        simility=np.dot(np.transpose(doc),q)/np.linalg.norm(doc)*np.linalg.norm(q)
+        return simility
+    
     def lexer(self,query):
         normalized_query = normalize_text(query)
         for term in normalized_query:
@@ -135,16 +166,17 @@ class LSI_Model(object):
         return normalized_query
 
     def make_query_vector(self,query):
-        self.query_vector = np.ndarray(len(self.vocabulary))
+        query_vector = np.ndarray(len(self.vocabulary))
         for i in range (len(self.documents_vector)):
             for term in self.vocabulary:
                 if term in self.documents_vector[i]:
-                    self.query_vector[i] += 1
-        return            
+                    query_vector[i] += 1
+        return query_vector
 
 
 
 #a = LSI_Model("modelos/corpus/*",2)
+#print(a.proces_query("fiends week house"))
 #f,b,c = a.svd_with_dimensionality_reduction() 
 #print(len(f))
 #print(len(b))

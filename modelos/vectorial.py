@@ -5,16 +5,17 @@ from operator import invert
 import os
 from collections import defaultdict
 from pydoc import doc
+from random import triangular
 from nlp.languaje_procesing import normalize_text
 from functools import reduce
 
 class VectorSpaceModel(object):
-    def __init__(self, Corpus) -> None:
+    def __init__(self, Corpus,d) -> None:
 
         self.Corpus = Corpus
 
 
-        self.documents = dict()
+        self.documents = defaultdict(dict)
 
 
         self.documents_vector = defaultdict(list)
@@ -26,7 +27,7 @@ class VectorSpaceModel(object):
 
         # ahora se supone que cuando no tenga nada ya tiene un cero
         def default_value_for_postings():
-            return [0 for i in range(len(glob.glob(self.Corpus)))]
+            return [0 for i in range(d)]
         
         self.postings = defaultdict(default_value_for_postings)
 
@@ -40,11 +41,16 @@ class VectorSpaceModel(object):
 
         def preprocesing_corpus():
             index = 0
-            for filename in glob.glob(self.Corpus):
-                with open(filename,"r") as file:
-                    text = file.read()
-                normalized_text = normalize_text(text) 
+            for i,file in enumerate(self.Corpus) :
+                id,title,text,au,bib = file
+                self.documents[i]['id'] = id
+                self.documents[i]['title'] = title
+                self.documents[i]['text'] = text
+                self.documents[i]['author'] = au
+                self.documents[i]['biblio'] = bib
+                self.documents[i]['rel'] = 0
 
+                normalized_text = normalize_text(text) 
                 unique_terms = set(normalized_text)
 
                 self.documents_vector[index] = unique_terms
@@ -54,7 +60,7 @@ class VectorSpaceModel(object):
                     self.postings[term][index] = normalized_text.count(term) # frecuencia del termino en el doc
                     self.global_terms_frequency[term] += 1
 
-                self.documents[index] = os.path.basename(filename)
+            #    self.documents[index] = os.path.basename(filename)
                 index += 1
 
         preprocesing_corpus()
@@ -72,6 +78,7 @@ class VectorSpaceModel(object):
         docs = []
         for t in scores_sorted:
             i,value = t
+            self.documents[i]['rel'] = value
             docs.append(self.documents[i])
 
         d = docs[:20]    

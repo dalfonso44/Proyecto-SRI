@@ -13,7 +13,7 @@ import math
 
 
 class LSI_Model(object):
-    def __init__(self, corpus, rank_aproximation) -> None:
+    def __init__(self, corpus, rank_aproximation,cant_docs) -> None:
         self.corpus = corpus
         self.M = 0 # numero de terminos indexados
         self.N = 0 # numero de coumentos
@@ -35,7 +35,7 @@ class LSI_Model(object):
         self.d = None
 
 
-        self.documents = dict()
+        self.documents = defaultdict(dict)
         self.index = defaultdict(dict)
 
         self.documents_vector = defaultdict(list)
@@ -49,7 +49,7 @@ class LSI_Model(object):
 
        # self.postings = defaultdict(dict) 
         def default_value_for_postings():
-            return [0 for i in range(len(glob.glob(self.corpus)))]
+            return [0 for i in range(cant_docs)]
         
         self.postings = defaultdict(default_value_for_postings)
 
@@ -77,9 +77,16 @@ class LSI_Model(object):
 
         def preprocesing_corpus():
             index = 0
-            for filename in glob.glob(self.corpus):
-                with open(filename,"r") as file:
-                    text = file.read()
+            for i,file in enumerate(self.corpus) :
+                id,title,text,au,bib = file
+                self.documents[i]['id'] = id
+                self.documents[i]['title'] = title
+                self.documents[i]['text'] = text
+                self.documents[i]['author'] = au
+                self.documents[i]['biblio'] = bib
+                self.documents[i]['rel'] = 0
+               
+
                 normalized_text = normalize_text(text) 
 
                 unique_terms = set(normalized_text)
@@ -94,7 +101,7 @@ class LSI_Model(object):
                     a = self.postings[term]
                     self.global_terms_frequency[term] += 1
 
-                self.documents[index] = os.path.basename(filename)
+                #self.documents[index] = os.path.basename(filename)
                 index += 1
             self.N = index 
             self.M=len(self.vocabulary)
@@ -145,8 +152,9 @@ class LSI_Model(object):
         #print(res)
         ranking = np.argsort(res)
         result = []
-        for doc in ranking :
-            result.append(self.documents[doc])
+        for i,id in enumerate(self.documents.keys()) :
+            self.documents[id]['rel'] = res[i]
+            result.append(self.documents[id])
         return result    
 
 

@@ -19,7 +19,7 @@ class BooleanModel(object):
         #
         self.documents = dict()
 
-        def preprocesing_corpus(self):
+        def preprocesing_corpus():
             index = 1
             for filename in glob.glob(self.Corpus):
                 with open(filename,"r") as file:
@@ -124,10 +124,10 @@ class BooleanModel(object):
 
     def _vector(self,term):
         docs_count = len(self.documents)
-        if term in self.Terms:
+        if term in self.terms:
             vector = np.zeros(docs_count,dtype=bool)
 
-            postings = self.inverted_matix[term]
+            postings = self.inverted_matrix[term]
             for doc_id in postings:
                 vector[doc_id-1] = True
             return vector

@@ -38,7 +38,7 @@ class VectorSpaceModel(object):
         self.documents_norm = defaultdict(float)
 
         def preprocesing_corpus():
-            index = 1
+            index = 0
             for filename in glob.glob(self.Corpus):
                 with open(filename,"r") as file:
                     text = file.read()
@@ -51,7 +51,7 @@ class VectorSpaceModel(object):
 
 
                 for term in unique_terms:
-                    self.postings[term][index - 1] = text.count(term) # frecuencia del termino en el doc
+                    self.postings[term][index] = text.count(term) # frecuencia del termino en el doc
                     self.global_terms_frequency[term] += 1
 
                 self.documents[index] = os.path.basename(filename)
@@ -62,11 +62,22 @@ class VectorSpaceModel(object):
 
     def proces_query(self,query):
         self.query_vector = self.lexer(query)
+        rank_docs = defaultdict(float)
         scores = defaultdict(float)
         for id in range(len(self.documents)):
             scores[id] = self.similarity(id)
 
-        return scores
+        import operator
+        scores_sorted = sorted(scores.items(),key = operator.itemgetter(1),reverse=True)
+
+        
+
+            
+
+
+
+
+        return scores_sorted
 
 
     def similarity(self, doc):
@@ -92,9 +103,6 @@ class VectorSpaceModel(object):
         return similarity 
 
 
-
-
-
     def weight_in_document(self, term,doc):
         tf_ij = self.normalized_term_frequency(term,doc)
         idf_i = self.inverse_document_frequecy(term)
@@ -108,8 +116,6 @@ class VectorSpaceModel(object):
 
         weight = (alpha + (1+alpha)*tf_iq) * idf_i
         return weight
-
-
 
 
     def normalized_term_frequency(self,term, doc): # si doc = -1 -> el documento es la consulta

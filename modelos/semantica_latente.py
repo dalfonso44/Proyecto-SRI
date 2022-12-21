@@ -1,10 +1,14 @@
+
+
 from statistics import variance
+from typing import List
 from nlp import normalize_text
 from numpy.linalg import svd, norm
 from collections import defaultdict, Counter
 import numpy as np
 import os
 import glob
+import math
 
 
 
@@ -25,14 +29,10 @@ class LSI_Model(object):
         self.Z = None
         self.V_t = None
 
-
-
-
-
-
-
-
-
+        #query en las nuevas matrices reducidas
+        self.q = None
+        #documentos reducidos
+        self.d = None
 
 
         self.documents = dict()
@@ -47,7 +47,11 @@ class LSI_Model(object):
 
        # self.postings = defaultdict([0 for i in range(glob.glob(self.corpus))])
 
-        self.postings = defaultdict(dict) 
+       # self.postings = defaultdict(dict) 
+        def default_value_for_postings():
+            return [0 for i in range(len(glob.glob(self.corpus)))]
+        
+        self.postings = defaultdict(default_value_for_postings)
 
         self.query_postings = defaultdict(int)
 
@@ -72,27 +76,28 @@ class LSI_Model(object):
         self.variance = 0.9
 
         def preprocesing_corpus():
-            index = 1
+            index = 0
             for filename in glob.glob(self.corpus):
                 with open(filename,"r") as file:
                     text = file.read()
-                    print("aqui hay algo")
                 normalized_text = normalize_text(text) 
 
                 unique_terms = set(normalized_text)
 
                 self.documents_vector[index] = unique_terms
                 self.vocabulary = self.vocabulary.union(unique_terms)
-                self.M += len(unique_terms)
-
+                #self.M += len(unique_terms)
+                
 
                 for term in normalized_text:
                     self.postings[term][index] = normalized_text.count(term) # frecuencia del termino en el doc
+                    a = self.postings[term]
                     self.global_terms_frequency[term] += 1
 
                 self.documents[index] = os.path.basename(filename)
                 index += 1
-            self.N = index -1   
+            self.N = index 
+            self.M=len(self.vocabulary)
            # print(self.N)
             #print(self.M)
 
@@ -111,7 +116,7 @@ class LSI_Model(object):
 
 
     def svd_with_dimensionality_reduction(self):
-        u, s, v = np.linalg.svd(self.C)
+        u, s, v = np.linalg.svd(self.C,full_matrices=False)
         s = np.diag(s)
         k = self.rank_aproximation
         return u[:, :k], s[:k, :k], v[:, :k]
@@ -120,11 +125,54 @@ class LSI_Model(object):
     def proces_query(self, query, top = 5 ):
         query = self.lexer(query)
         self.query_vector = self.make_query_vector(query)
+        print("....")
+        print(self.query_vector[:10])
 
         self.U, self.Z, self.V_t = self.svd_with_dimensionality_reduction()
 
-         
+        #query_trasp = np.transpose(self.query_vector)
+       
 
+        q = self.query_vector.T @ self.U @ np.linalg.pinv(self.Z)
+        d = self.C.T @ self.U @ np.linalg.pinv(self.Z)
+
+        #self.q = np.dot(np.dot(np.linalg.inv(self.Z),np.transpose(self.U)),query_trasp)
+        #C_transp=np.transpose(self.C)
+        #self.d = np.dot(np.dot(np.linalg.inv(self.Z),np.transpose(self.U)),C_transp)
+
+
+        res = np.apply_along_axis(lambda row: self.sim(q, row), axis=1, arr=d)
+        print(res)
+        ranking = np.argsort(res)
+        result = dict()
+        for doc in ranking :
+            result[doc] = self.documents[doc]
+        return result    
+
+
+        #similitudes = []
+        #for i in range(self.d.shape[1]):
+        #    similitudes.append(self.d[:,i],self.q)
+
+        #return similitudes
+
+    
+    def rank(self,similitudes,doc):
+        for i in range(len(similitudes)):
+            for j in range(i + 1, len(similitudes)):
+                if similitudes[i] < similitudes[j]:
+                    similitudes[i], similitudes[j] = similitudes[j], similitudes[i]
+                    doc[i], doc[j] = doc[j], doc[i]
+        return doc
+                
+
+    def sim(self,doc,q):
+        p = np.dot(doc,q)
+        n= (np.linalg.norm(doc) * np.linalg.norm(q))
+        if n == 0: return 0
+        simility=p/n
+        return simility
+    
     def lexer(self,query):
         normalized_query = normalize_text(query)
         for term in normalized_query:
@@ -134,21 +182,9 @@ class LSI_Model(object):
 
         return normalized_query
 
-    def make_query_vector(self,query):
-        self.query_vector = np.ndarray(len(self.vocabulary))
-        for i in range (len(self.documents_vector)):
-            for term in self.vocabulary:
-                if term in self.documents_vector[i]:
-                    self.query_vector[i] += 1
-        return            
-
-
-
-# a = LSI_Model("modelos/corpus/*",2)
-# f,b,c = a.svd_with_dimensionality_reduction() 
-# print(len(f))
-# print(len(b))
-# print(len(c))
-
-#print(c)
+    def make_query_vector(self,query: List):
+        query_vector = np.zeros(len(self.vocabulary))
+        for i,term in enumerate(self.vocabulary):
+            query_vector[i] += query.count(term) # x ahora va a ser la cantidad de veces que aparece 
+        return query_vector
 

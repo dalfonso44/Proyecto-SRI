@@ -29,6 +29,7 @@ def normalize_text(text):
     lemmatizer = WordNetLemmatizer()
     punctuation = string.punctuation 
     normalized_text = []
+    text = remove_html(text)
     text = remove_numbers(text)
     text = remove_unnecesary_punctuation(text) #si se demoran mucho los algoritmos usar una estructura de datos
     tokenize_text = word_tokenize(text)

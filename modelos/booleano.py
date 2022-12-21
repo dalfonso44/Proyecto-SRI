@@ -57,9 +57,14 @@ class BooleanModel(object):
                 yield self.documents[i+1]        
 
 
+
+
     def lexer(self,query):
         tokens = [] 
+        p = ['AND', 'OR','not','(',')']
         for item in query.split():
+            if item not in p:
+                item = normalize_text(item)[0]
             tokens.append(item)
         return tokens    
 

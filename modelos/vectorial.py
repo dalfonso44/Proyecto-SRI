@@ -4,6 +4,7 @@ import math
 from operator import invert
 import os
 from collections import defaultdict
+from pydoc import doc
 from nlp.languaje_procesing import normalize_text
 from functools import reduce
 
@@ -49,9 +50,8 @@ class VectorSpaceModel(object):
                 self.documents_vector[index] = unique_terms
                 self.vocabulary = self.vocabulary.union(unique_terms)
 
-
-                for term in unique_terms:
-                    self.postings[term][index] = text.count(term) # frecuencia del termino en el doc
+                for term in normalized_text:
+                    self.postings[term][index] = normalized_text.count(term) # frecuencia del termino en el doc
                     self.global_terms_frequency[term] += 1
 
                 self.documents[index] = os.path.basename(filename)
@@ -62,7 +62,6 @@ class VectorSpaceModel(object):
 
     def proces_query(self,query):
         self.query_vector = self.lexer(query)
-        rank_docs = defaultdict(float)
         scores = defaultdict(float)
         for id in range(len(self.documents)):
             scores[id] = self.similarity(id)
@@ -70,14 +69,16 @@ class VectorSpaceModel(object):
         import operator
         scores_sorted = sorted(scores.items(),key = operator.itemgetter(1),reverse=True)
 
-        
+        docs = []
+        for t in scores_sorted:
+            i,value = t
+            docs.append(self.documents[i])
 
-            
+        d = docs[:20]    
 
 
 
-
-        return scores_sorted
+        return docs
 
 
     def similarity(self, doc):
@@ -95,7 +96,9 @@ class VectorSpaceModel(object):
 
         query_norm = math.sqrt(query_norm)
         for term in self.documents_vector[doc]:
-            doc_norm += self.weight_in_document(term,doc)
+            doc_norm += self.weight_in_document(term,doc)**2
+
+        doc_norm = math.sqrt(doc_norm)    
 
         if similarity == 0:
             return 0
@@ -136,7 +139,7 @@ class VectorSpaceModel(object):
                     max_frequency = freq
         else :
             for terms in self.documents_vector[doc]:
-                freq = self.postings[term][doc]
+                freq = self.postings[terms][doc]
                 if max_frequency < freq:
                     max_frequency = freq    
         
@@ -148,7 +151,7 @@ class VectorSpaceModel(object):
         n_i = self.global_terms_frequency[term]     
 
         #revisar esto, sumar 1 arriba y abajo pa que nunca de cero
-        idf = math.log((N/n_i),2)   
+        idf = math.log(((N+1)/(1+n_i)),2)   
         return idf
 
 

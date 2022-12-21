@@ -109,8 +109,10 @@ class LSI_Model(object):
         c = np.zeros((self.M,self.N), dtype=int)
         for i,word in enumerate(self.vocabulary):
             for j in range(self.N):
-                if word in self.documents_vector[j+1]:
-                    c[i,j] = self.postings[word][j+1]
+                if word in self.documents_vector[j]:
+                    l_ij = math.log((self.postings[word][j] + 1)) # LOG(TF +1)
+                    gi = math.log((self.N/ (1 + self.global_terms_frequency[word])),2) # gi = log2 n/1+dfi
+                    c[i,j] = l_ij * gi
                     
         return c
 
@@ -125,9 +127,7 @@ class LSI_Model(object):
     def proces_query(self, query, top = 5 ):
         query = self.lexer(query)
         self.query_vector = self.make_query_vector(query)
-        print("....")
-        print(self.query_vector[:10])
-
+        
         self.U, self.Z, self.V_t = self.svd_with_dimensionality_reduction()
 
         #query_trasp = np.transpose(self.query_vector)
@@ -142,11 +142,11 @@ class LSI_Model(object):
 
 
         res = np.apply_along_axis(lambda row: self.sim(q, row), axis=1, arr=d)
-        print(res)
+        #print(res)
         ranking = np.argsort(res)
-        result = dict()
+        result = []
         for doc in ranking :
-            result[doc] = self.documents[doc]
+            result.append(self.documents[doc])
         return result    
 
 

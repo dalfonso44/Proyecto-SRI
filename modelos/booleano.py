@@ -17,13 +17,19 @@ class BooleanModel(object):
         self.terms = []
 
         #
-        self.documents = dict()
+        self.documents =  defaultdict(dict)
 
         def preprocesing_corpus():
-            index = 1
-            for filename in glob.glob(self.Corpus):
-                with open(filename,"r") as file:
-                    text = file.read()
+            index = 0
+            for i,file in enumerate(self.Corpus) :
+                id,title,text,au,bib = file
+                self.documents[i]['id'] = id
+                self.documents[i]['title'] = title
+                self.documents[i]['text'] = text
+                self.documents[i]['author'] = au
+                self.documents[i]['biblio'] = bib
+                self.documents[i]['rel'] = 0
+                
                 normalized_text = normalize_text(text)  
 
                 # erase repeted words
@@ -33,7 +39,7 @@ class BooleanModel(object):
                 for word in normalized_text:
                     self.inverted_matrix[word].append(index) 
                     self.terms.append(word)
-                self.documents[index] = (os.path.basename(filename),"resumen") 
+                #self.documents[index] = (os.path.basename(filename),"resumen") 
                 index += 1  
 
         preprocesing_corpus()    
@@ -51,10 +57,12 @@ class BooleanModel(object):
     def proces_query(self,query):
         query_tokens = self.lexer(query)
         vector = self._evaluate_query(query_tokens)
-        relevant_docs = dict()
+        relevant_docs = []
         for i in range (len(self.documents)):
             if vector[i] == True:
-                yield self.documents[i+1]        
+                relevant_docs.append(self.documents[i])   
+
+        return relevant_docs             
 
 
 
@@ -134,7 +142,7 @@ class BooleanModel(object):
 
             postings = self.inverted_matrix[term]
             for doc_id in postings:
-                vector[doc_id-1] = True
+                vector[doc_id] = True
             return vector
         else:
             print("The term"+ term + " Was not found in the corpus")                
